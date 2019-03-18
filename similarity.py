@@ -3,7 +3,7 @@
 from nltk.corpus import wordnet as wn
 import pandas as pd
 import gensim
-import numpy as np
+from scipy import stats
 
 
 # Path based similarity
@@ -19,24 +19,25 @@ def word_similarity_wordnet(word_pairs):
                 if lch_sim is not None:
                     maxsim = max(maxsim, lch_sim)
         path_scores.append(maxsim)
-    # print(path_scores[:10])
+    # print('scores-1:', path_scores[:10])
     return path_scores
 
 
 # Word2vec based similarity (cosine similarity)
 def word_similarity_word2vec(word_pairs):
     scores = []
-    models = gensim.models.KeyedVectors.load_word2vec_format('pre-trained-data')
+    model = gensim.models.KeyedVectors.load('data/GoogleNews-vectors.model')
     for (firstw, secondw) in word_pairs:
-        sim = models.similarity(firstw, secondw)
+        sim = model.similarity(firstw, secondw)
         scores.append(sim)
-    print(scores[:10])
+    # print('scores-2:', scores[:10])
     return scores
 
 
-# Compare computing scores with human scores
-def compare_similarity(scores, labels):
-    pass
+# Compare computing scores with human scores: Spearman's rank correlation coefficient
+def spearman_corr(scores, labels):
+    (rho, p_value) = stats.spearmanr(scores, labels)
+    print(rho, p_value)
 
 
 def main():
@@ -48,9 +49,11 @@ def main():
         word_pairs.append(tuple(pair[:2]))
         sim_scores.append(pair[2])
     path_scores = word_similarity_wordnet(word_pairs)
-    compare_similarity(path_scores, sim_scores)
+    print('path based:')
+    spearman_corr(path_scores, sim_scores)
     word2vec_scores = word_similarity_word2vec(word_pairs)
-    compare_similarity(word2vec_scores, sim_scores)
+    print('word2vec based:')
+    spearman_corr(word2vec_scores, sim_scores)
 
 
 if __name__ == '__main__':
